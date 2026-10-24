@@ -1,23 +1,24 @@
-from util import root_dir
-from flask import Flask, send_file
-import os
+from flask import Flask, send_from_directory
+from markupsafe import escape
+
+from util import DATA_DIR
 
 app = Flask(__name__)
 
-@app.route('/')
+
+@app.route("/")
 def index():
-    files = os.listdir(root_dir)
-    return f"""
-    <h1>파일 목록</h1>
-    <ul>
-        {''.join([f'<li><a href="/download/{file}">{file}</a></li>' for file in files])}
-    </ul>
-    """
+    links = "".join(
+        f'<li><a href="/download/{escape(p.name)}">{escape(p.name)}</a></li>'
+        for p in sorted(DATA_DIR.iterdir())
+    )
+    return f"<h1>파일 목록</h1><ul>{links}</ul>"
 
-@app.route('/download/<path:filename>')
+
+@app.route("/download/<path:filename>")
 def download(filename):
-    return send_file(f"{root_dir}/{filename}", as_attachment=True)
+    return send_from_directory(DATA_DIR, filename, as_attachment=True)
 
-if __name__ == '__main__':
-    app.run(port=8000, host='0.0.0.0', debug=False)
-    
+
+if __name__ == "__main__":
+    app.run(port=8000, host="0.0.0.0", debug=False)
