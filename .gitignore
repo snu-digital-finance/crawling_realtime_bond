@@ -1,4 +1,4 @@
-*.xlsx
-*.xls
+data/
+log/
 __pycache__/
 *.pyc

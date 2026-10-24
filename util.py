@@ -1,41 +1,42 @@
-import pandas as pd 
-from datetime import datetime as dt
-from datetime import timedelta
+import logging
+import os
+from datetime import datetime
+from pathlib import Path
+from zoneinfo import ZoneInfo
 
-today = (dt.now()+timedelta(hours=9))
-if today.weekday() == 0:
-    yesterday = today-timedelta(days=3)
-else:
-    yesterday = today-timedelta(days=1)
+import pandas as pd
 
-today = today.strftime("%Y%m%d")
-yesterday = yesterday.strftime("%Y%m%d")
+BASE_DIR = Path(__file__).resolve().parent
+DATA_DIR = BASE_DIR / "data"
+LOG_DIR = BASE_DIR / "log"
 
-        
-root_dir = "/home/dodev0987/realtime/data"
-# root_dir ="./data"
-total_file = f"{root_dir}/result_total.xlsx"
-today_file = f"{root_dir}/result_today.xlsx"
-init_file = f"{root_dir}/result_init.xlsx"
+TODAY = datetime.now(ZoneInfo("Asia/Seoul")).strftime("%Y%m%d")
+TODAY_FILE = DATA_DIR / "result_today.csv"
 
-columns = [
-    "날짜", "시간", "종목명", "잔존기간", "신용등급", 
-    "수익률", "단가(원)", "거래량", "거래대금", 
-    "시장구분", "매매구분", "매매유형"
+TRADE_COLUMNS = [
+    "날짜", "시간", "종목명", "잔존기간", "신용등급",
+    "수익률", "단가(원)", "거래량", "거래대금",
+    "시장구분", "매매구분", "매매유형",
 ]
 
-def create_file(filename):
-    df = pd.DataFrame(columns=columns)
-    df.to_excel(filename, engine="openpyxl", index=False)
-    df = pd.read_excel(filename) 
-    return df
 
-def read_file_nan_check(filename):
-    try:
-        df = pd.read_excel(filename) 
-        msg = "read file"
-    except:
-        df = create_file(filename)
-        msg = "create new file"
+def setup_logging(name: str) -> None:
+    LOG_DIR.mkdir(exist_ok=True)
+    logging.basicConfig(
+        filename=LOG_DIR / f"{name}.log",
+        level=logging.INFO,
+        format="%(asctime)s - %(levelname)s - %(message)s",
+    )
 
-    return df, msg
+
+def read_csv(path: Path, columns: list[str]) -> pd.DataFrame:
+    if not path.exists():
+        return pd.DataFrame(columns=columns)
+    return pd.read_csv(path, dtype=str, keep_default_na=False)
+
+
+def write_csv(df: pd.DataFrame, path: Path) -> None:
+    DATA_DIR.mkdir(exist_ok=True)
+    tmp = path.with_name(path.name + ".tmp")
+    df.to_csv(tmp, index=False)
+    os.replace(tmp, path)
